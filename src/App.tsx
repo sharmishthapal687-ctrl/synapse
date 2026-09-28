@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { RoleSelectScreen } from './components/RoleSelectScreen';
 import { IndividualAuthScreen } from './components/IndividualAuthScreen';
+import { CommunityAuthScreen } from './components/CommunityAuthScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { Navbar } from './components/Navbar';
 import { HomeScreen } from './components/HomeScreen';
@@ -27,12 +28,15 @@ import {
   getStoredCommunities,
   saveStoredCommunities,
   getStoredActiveCommunity,
-  saveStoredActiveCommunity
+  saveStoredActiveCommunity,
+  addCommunityToStorage,
+  saveStoredOrganizerEmail
 } from './services/storage';
 
 type ScreenState = 
   | 'role-select'
   | 'individual-auth'
+  | 'community-auth'
   | 'onboarding' 
   | 'home' 
   | 'search' 
@@ -97,8 +101,22 @@ export function App() {
     navigateTo('home');
   };
 
+  const handleCommunityLogin = (community: Community, email: string) => {
+    saveStoredActiveCommunity(community);
+    saveStoredOrganizerEmail(email);
+    const updatedCommunities = addCommunityToStorage(community);
+    setCommunities(updatedCommunities);
+    setActiveCommunity(community);
+    setUserRole('community');
+    navigateTo('community-dashboard');
+  };
+
   const handleLogOut = () => {
-    saveStoredCurrentUser(null);
+    if (userRole === 'community') {
+      saveStoredOrganizerEmail(null);
+    } else {
+      saveStoredCurrentUser(null);
+    }
     navigateTo('role-select');
   };
 
@@ -195,9 +213,8 @@ export function App() {
     return (
       <RoleSelectScreen
         onSelectRole={(role) => {
-          setUserRole(role);
           if (role === 'community') {
-            navigateTo('community-dashboard');
+            navigateTo('community-auth');
           } else {
             navigateTo('individual-auth');
           }
@@ -213,6 +230,17 @@ export function App() {
         onLogin={handleIndividualLogin}
         onBackToRoles={() => navigateTo('role-select')}
         existingUsers={users}
+      />
+    );
+  }
+
+  // Community Email Verification & Registration Gateway
+  if (currentScreen === 'community-auth') {
+    return (
+      <CommunityAuthScreen
+        onSelectCommunity={handleCommunityLogin}
+        onBackToRoles={() => navigateTo('role-select')}
+        communities={communities}
       />
     );
   }
@@ -415,6 +443,14 @@ export function App() {
 
             {/* Community Mode Switcher */}
             <div className="h-4 w-px bg-zinc-800 mx-1"></div>
+            <button
+              type="button"
+              onClick={() => navigateTo('community-auth')}
+              className="px-2 py-1 rounded text-zinc-400 hover:text-[#D4FF00] hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              title="Verify organizer email or register club"
+            >
+              Club Portal
+            </button>
             <button
               type="button"
               onClick={() => { setUserRole('community'); navigateTo('community-dashboard'); }}

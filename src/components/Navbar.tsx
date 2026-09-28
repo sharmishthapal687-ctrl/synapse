@@ -141,12 +141,12 @@ export const Navbar = ({
           )}
 
           {/* Sign Out / Switch Identity Button */}
-          {userRole === 'individual' && onLogOut && (
+          {onLogOut && (
             <button
               type="button"
               onClick={onLogOut}
               className="p-2 rounded-full border border-zinc-800 hover:border-zinc-700 bg-zinc-900/80 text-zinc-400 hover:text-[#D4FF00] transition-colors cursor-pointer"
-              title="Switch account / Log out"
+              title={userRole === 'community' ? 'Exit Organizer Hub / Switch Account' : 'Switch account / Log out'}
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>

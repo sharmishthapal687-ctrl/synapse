@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   COMMENTS: 'synapse_comments_v2',
   COMMUNITIES: 'synapse_communities_v2',
   ACTIVE_COMMUNITY: 'synapse_active_community_v2',
+  ORGANIZER_EMAIL: 'synapse_organizer_email_v2',
 };
 
 // Safe helper to read from localStorage with fallback
@@ -104,4 +105,32 @@ export function getStoredActiveCommunity(): Community {
 
 export function saveStoredActiveCommunity(community: Community): void {
   safeSetItem(STORAGE_KEYS.ACTIVE_COMMUNITY, community);
+}
+
+export function addCommunityToStorage(newCommunity: Community): Community[] {
+  const existing = getStoredCommunities();
+  const index = existing.findIndex(c => c.id === newCommunity.id || c.contactEmail.toLowerCase() === newCommunity.contactEmail.toLowerCase());
+  let updated: Community[];
+  if (index >= 0) {
+    updated = [...existing];
+    updated[index] = newCommunity;
+  } else {
+    updated = [newCommunity, ...existing];
+  }
+  saveStoredCommunities(updated);
+  return updated;
+}
+
+export function getStoredOrganizerEmail(): string | null {
+  return safeGetItem<string | null>(STORAGE_KEYS.ORGANIZER_EMAIL, null);
+}
+
+export function saveStoredOrganizerEmail(email: string | null): void {
+  if (email) {
+    safeSetItem(STORAGE_KEYS.ORGANIZER_EMAIL, email);
+  } else {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.ORGANIZER_EMAIL);
+    } catch {}
+  }
 }
