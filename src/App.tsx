@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { RoleSelectScreen } from './components/RoleSelectScreen';
+import { IndividualAuthScreen } from './components/IndividualAuthScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { Navbar } from './components/Navbar';
 import { HomeScreen } from './components/HomeScreen';
@@ -11,12 +12,27 @@ import { CommunitiesScreen } from './components/CommunitiesScreen';
 import { CommunityDashboard } from './components/CommunityDashboard';
 import { ChatRoomModal } from './components/ChatRoomModal';
 import { CuteCompanion } from './components/CuteCompanion';
-import { mockUsers, mockEvents, mockProjects, mockCommunities, initialChatMessages } from './data/mockData';
-import type { User, CommunityEvent, CommunityProject, SearchResults, UserRole, Community, ChatMessage } from './types';
+import { mockProjects, initialChatMessages, mockUsers, mockEvents } from './data/mockData';
+import type { User, CommunityEvent, CommunityProject, SearchResults, UserRole, Community, ChatMessage, EventComment } from './types';
 import { performSemanticSearch } from './services/semanticSearch';
+import {
+  getStoredUsers,
+  addUserToStorage,
+  getStoredCurrentUser,
+  saveStoredCurrentUser,
+  getStoredEvents,
+  saveStoredEvents,
+  getStoredComments,
+  saveStoredComments,
+  getStoredCommunities,
+  saveStoredCommunities,
+  getStoredActiveCommunity,
+  saveStoredActiveCommunity
+} from './services/storage';
 
 type ScreenState = 
   | 'role-select'
+  | 'individual-auth'
   | 'onboarding' 
   | 'home' 
   | 'search' 
@@ -31,21 +47,27 @@ export function App() {
   const [previousScreen, setPreviousScreen] = useState<ScreenState>('home');
   const [userRole, setUserRole] = useState<UserRole>('individual');
   
-  // Data layers
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers[2]); // Sharmishtha Pal
-  const [communities, setCommunities] = useState<Community[]>(mockCommunities);
-  const [activeCommunity, setActiveCommunity] = useState<Community>(mockCommunities[0]);
-  const [events, setEvents] = useState<CommunityEvent[]>(mockEvents);
+  // Persistent Data Layers (from localStorage with fallbacks)
+  const [users, setUsers] = useState<User[]>(() => getStoredUsers());
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    const stored = getStoredCurrentUser();
+    if (stored) return stored;
+    return getStoredUsers()[2] || mockUsers[0];
+  });
+  const [communities, setCommunities] = useState<Community[]>(() => getStoredCommunities());
+  const [activeCommunity, setActiveCommunity] = useState<Community>(() => getStoredActiveCommunity());
+  const [events, setEvents] = useState<CommunityEvent[]>(() => getStoredEvents());
+  const [commentsStore, setCommentsStore] = useState<Record<string, EventComment[]>>(() => getStoredComments());
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
   
   // Modals & detail selections
-  const [selectedProfileUser, setSelectedProfileUser] = useState<User>(mockUsers[0]);
+  const [selectedProfileUser, setSelectedProfileUser] = useState<User>(() => currentUser);
   const [selectedEventForModal, setSelectedEventForModal] = useState<CommunityEvent | null>(null);
   const [activeChatCommunity, setActiveChatCommunity] = useState<Community | null>(null);
 
   // Search results state
   const [searchResults, setSearchResults] = useState<SearchResults>(() =>
-    performSemanticSearch('I want to build an AI healthcare project and need a Python developer')
+    performSemanticSearch('I want to build an AI healthcare project and need a Python developer', users, events)
   );
 
   const navigateTo = (screen: ScreenState) => {
@@ -64,22 +86,39 @@ export function App() {
     }
   };
 
+  // Auth & Account Management
+  const handleIndividualLogin = (user: User) => {
+    saveStoredCurrentUser(user);
+    const updatedUsers = addUserToStorage(user);
+    setUsers(updatedUsers);
+    setCurrentUser(user);
+    setSelectedProfileUser(user);
+    setUserRole('individual');
+    navigateTo('home');
+  };
+
+  const handleLogOut = () => {
+    saveStoredCurrentUser(null);
+    navigateTo('role-select');
+  };
+
   const handleOnboardingComplete = (data: {
     interests: string[];
     skills: string[];
     lookingFor: string[];
   }) => {
-    setCurrentUser(prev => ({
-      ...prev,
+    const updated: User = {
+      ...currentUser,
       interests: data.interests,
       skills: data.skills,
       lookingFor: data.lookingFor
-    }));
+    };
+    handleUpdateCurrentUser(updated);
     navigateTo('home');
   };
 
   const handleExecuteSearch = (query: string) => {
-    const res = performSemanticSearch(query);
+    const res = performSemanticSearch(query, users, events);
     setSearchResults(res);
     navigateTo('search');
   };
@@ -99,20 +138,36 @@ export function App() {
   };
 
   const handlePublishEvent = (newEvent: CommunityEvent) => {
-    setEvents(prev => [newEvent, ...prev]);
-    setCommunities(prev => prev.map(c => 
+    const updatedEvents = [newEvent, ...events];
+    setEvents(updatedEvents);
+    saveStoredEvents(updatedEvents);
+
+    const updatedCommunities = communities.map(c => 
       c.id === activeCommunity.id ? { ...c, activeEventsCount: c.activeEventsCount + 1 } : c
-    ));
+    );
+    setCommunities(updatedCommunities);
+    saveStoredCommunities(updatedCommunities);
+  };
+
+  const handleUpdateCommentsStore = (updatedStore: Record<string, EventComment[]>) => {
+    setCommentsStore(updatedStore);
+    saveStoredComments(updatedStore);
   };
 
   const handleUpdateCommunity = (updated: Community) => {
     setActiveCommunity(updated);
-    setCommunities(prev => prev.map(c => c.id === updated.id ? updated : c));
+    saveStoredActiveCommunity(updated);
+    const updatedCommList = communities.map(c => c.id === updated.id ? updated : c);
+    setCommunities(updatedCommList);
+    saveStoredCommunities(updatedCommList);
   };
 
   const handleRegisterCommunity = (newCommunity: Community) => {
-    setCommunities(prev => [newCommunity, ...prev]);
+    const updatedList = [newCommunity, ...communities];
+    setCommunities(updatedList);
+    saveStoredCommunities(updatedList);
     setActiveCommunity(newCommunity);
+    saveStoredActiveCommunity(newCommunity);
   };
 
   const handleSendMessage = (msg: ChatMessage) => {
@@ -121,6 +176,9 @@ export function App() {
 
   const handleUpdateCurrentUser = (updated: User) => {
     setCurrentUser(updated);
+    saveStoredCurrentUser(updated);
+    const updatedUsers = addUserToStorage(updated);
+    setUsers(updatedUsers);
     if (selectedProfileUser.id === updated.id) {
       setSelectedProfileUser(updated);
     }
@@ -141,17 +199,31 @@ export function App() {
           if (role === 'community') {
             navigateTo('community-dashboard');
           } else {
-            navigateTo('home');
+            navigateTo('individual-auth');
           }
         }}
       />
     );
   }
 
-  // If initial onboarding
+  // Individual Login / Sign Up Screen
+  if (currentScreen === 'individual-auth') {
+    return (
+      <IndividualAuthScreen
+        onLogin={handleIndividualLogin}
+        onBackToRoles={() => navigateTo('role-select')}
+        existingUsers={users}
+      />
+    );
+  }
+
+  // Optional manual onboarding
   if (currentScreen === 'onboarding') {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
+
+  // Candidate for recommended person (different from currentUser)
+  const candidateRecommendation = users.find(u => u.id !== currentUser.id) || users[0] || mockUsers[0];
 
   return (
     <div className="min-h-screen bg-[#09090B] bg-grid-pattern text-zinc-100 flex flex-col font-sans selection:bg-[#D4FF00] selection:text-black relative">
@@ -168,6 +240,7 @@ export function App() {
           onToggleRole={handleToggleRole}
           activeCommunity={activeCommunity}
           onViewMyProfile={handleViewMyProfile}
+          onLogOut={handleLogOut}
         />
       </div>
 
@@ -179,9 +252,9 @@ export function App() {
             onSelectPerson={handleViewPerson}
             onSelectEvent={handleViewEvent}
             onSelectProject={handleViewProject}
-            recommendedPerson={mockUsers[0]} // Aarav
-            recommendedEvent={events[0]} // Live events
-            recommendedProject={mockProjects[0]} // AI Healthcare Assistant
+            recommendedPerson={candidateRecommendation}
+            recommendedEvent={events[0] || mockEvents[0]}
+            recommendedProject={mockProjects[0]}
           />
         )}
 
@@ -208,6 +281,8 @@ export function App() {
 
         {currentScreen === 'team' && (
           <FindMyTeamScreen
+            users={users}
+            currentUser={currentUser}
             onSelectPerson={handleViewPerson}
           />
         )}
@@ -217,6 +292,9 @@ export function App() {
             onSelectEvent={handleViewEvent}
             initialSelectedEvent={selectedEventForModal}
             currentUser={currentUser}
+            events={events}
+            commentsStore={commentsStore}
+            onUpdateCommentsStore={handleUpdateCommentsStore}
           />
         )}
 
@@ -264,7 +342,7 @@ export function App() {
       <aside className="border-t border-zinc-800 bg-[#0C0C0E]/95 backdrop-blur-md py-2.5 px-4 font-mono relative z-10">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-400">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-zinc-400 uppercase tracking-wider text-[11px]">// DEMO:</span>
+            <span className="font-bold text-zinc-400 uppercase tracking-wider text-[11px]">// NAVIGATION:</span>
             
             {/* Student Screens */}
             <div className="flex items-center gap-1 flex-wrap">
@@ -275,6 +353,14 @@ export function App() {
                 title="Open initial role selection gate"
               >
                 0. Role Gate
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateTo('individual-auth')}
+                className="px-2 py-1 rounded transition-colors text-zinc-400 hover:text-white hover:bg-zinc-800/80 cursor-pointer"
+                title="Sign in or create account"
+              >
+                Sign Up / Login
               </button>
               <button
                 type="button"
@@ -324,13 +410,6 @@ export function App() {
                 className={`px-2 py-1 rounded transition-colors ${currentScreen === 'profile' && selectedProfileUser.id === currentUser.id ? 'bg-[#D4FF00] text-black font-bold shadow-[0_0_10px_rgba(212,255,0,0.3)]' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/80 cursor-pointer'}`}
               >
                 6. Profile & Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => navigateTo('onboarding')}
-                className="px-2 py-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800/80 transition-colors cursor-pointer"
-              >
-                Setup
               </button>
             </div>
 

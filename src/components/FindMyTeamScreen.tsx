@@ -5,6 +5,8 @@ import { mockUsers } from '../data/mockData';
 
 interface FindMyTeamScreenProps {
   onSelectPerson: (user: User) => void;
+  users?: User[];
+  currentUser?: User;
 }
 
 const COMMON_SKILL_OPTIONS = [
@@ -26,7 +28,11 @@ interface MatchedCandidate {
   reason: string;
 }
 
-export const FindMyTeamScreen = ({ onSelectPerson }: FindMyTeamScreenProps) => {
+export const FindMyTeamScreen = ({ 
+  onSelectPerson,
+  users = mockUsers,
+  currentUser
+}: FindMyTeamScreenProps) => {
   const [projectName, setProjectName] = useState('AI Clinical Diagnostics Assistant');
   const [projectDescription, setProjectDescription] = useState('Building a medical imaging triage tool for rural clinics that analyzes X-rays and summarizes findings.');
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Python', 'Machine Learning', 'UI/UX']);
@@ -57,7 +63,10 @@ export const FindMyTeamScreen = ({ onSelectPerson }: FindMyTeamScreenProps) => {
     e.preventDefault();
     if (selectedSkills.length === 0) return;
 
-    const matched: MatchedCandidate[] = mockUsers.map(user => {
+    // Filter out currentUser so you don't match yourself as a teammate
+    const candidatePool = users.filter(u => !currentUser || u.id !== currentUser.id);
+
+    const matched: MatchedCandidate[] = candidatePool.map(user => {
       const userSkillsLower = user.skills.map(s => s.toLowerCase());
       const overlapping = selectedSkills.filter(reqSkill =>
         userSkillsLower.some(us => us.includes(reqSkill.toLowerCase()) || reqSkill.toLowerCase().includes(us))

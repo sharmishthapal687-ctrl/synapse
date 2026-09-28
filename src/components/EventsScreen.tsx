@@ -8,6 +8,9 @@ interface EventsScreenProps {
   onSelectEvent?: (event: CommunityEvent) => void;
   initialSelectedEvent?: CommunityEvent | null;
   currentUser?: User;
+  events?: CommunityEvent[];
+  commentsStore?: Record<string, EventComment[]>;
+  onUpdateCommentsStore?: (updated: Record<string, EventComment[]>) => void;
 }
 
 const CATEGORIES = [
@@ -20,19 +23,29 @@ const CATEGORIES = [
   'Workshops'
 ] as const;
 
-export const EventsScreen = ({ initialSelectedEvent, currentUser }: EventsScreenProps) => {
+export const EventsScreen = ({ 
+  initialSelectedEvent, 
+  currentUser,
+  events = mockEvents,
+  commentsStore: externalCommentsStore,
+  onUpdateCommentsStore
+}: EventsScreenProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModalEvent, setActiveModalEvent] = useState<CommunityEvent | null>(initialSelectedEvent || null);
   const [registeredMap, setRegisteredMap] = useState<Record<string, boolean>>({});
-  const [commentsStore, setCommentsStore] = useState<Record<string, EventComment[]>>(mockEventComments);
+  const [internalCommentsStore, setInternalCommentsStore] = useState<Record<string, EventComment[]>>(
+    externalCommentsStore || mockEventComments
+  );
   const commentsSectionRef = useRef<HTMLDivElement>(null);
 
+  const activeCommentsStore = externalCommentsStore || internalCommentsStore;
+
   const getCommentCount = (eventId: string) => {
-    return commentsStore[eventId]?.length || 0;
+    return activeCommentsStore[eventId]?.length || 0;
   };
 
-  const filteredEvents = mockEvents.filter(evt => {
+  const filteredEvents = events.filter(evt => {
     const matchesCategory =
       selectedCategory === 'All' ||
       evt.category === selectedCategory ||
@@ -330,12 +343,16 @@ export const EventsScreen = ({ initialSelectedEvent, currentUser }: EventsScreen
                 eventTitle={activeModalEvent.title}
                 organizerName={activeModalEvent.organizer}
                 currentUser={currentUser}
-                initialComments={commentsStore[activeModalEvent.id] || []}
+                initialComments={activeCommentsStore[activeModalEvent.id] || []}
                 onUpdateComments={(updatedComments) => {
-                  setCommentsStore(prev => ({
-                    ...prev,
+                  const updated = {
+                    ...activeCommentsStore,
                     [activeModalEvent.id]: updatedComments
-                  }));
+                  };
+                  setInternalCommentsStore(updated);
+                  if (onUpdateCommentsStore) {
+                    onUpdateCommentsStore(updated);
+                  }
                 }}
               />
             </div>

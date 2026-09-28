@@ -1,4 +1,4 @@
-import { Sparkles, Users, Calendar, UserCheck, Compass, Building2, ArrowLeftRight } from 'lucide-react';
+import { Sparkles, Users, Calendar, UserCheck, Compass, Building2, ArrowLeftRight, LogOut } from 'lucide-react';
 import type { User, UserRole, Community } from '../types';
 
 interface NavbarProps {
@@ -9,6 +9,7 @@ interface NavbarProps {
   onToggleRole: () => void;
   activeCommunity?: Community;
   onViewMyProfile?: () => void;
+  onLogOut?: () => void;
 }
 
 export const Navbar = ({
@@ -18,7 +19,8 @@ export const Navbar = ({
   userRole,
   onToggleRole,
   activeCommunity,
-  onViewMyProfile
+  onViewMyProfile,
+  onLogOut
 }: NavbarProps) => {
   const studentNavItems = [
     { id: 'home', label: 'Home', icon: Sparkles },
@@ -135,6 +137,18 @@ export const Navbar = ({
               <span className="hidden lg:inline text-xs font-medium text-zinc-300">
                 {currentUser?.name || 'Student'}
               </span>
+            </button>
+          )}
+
+          {/* Sign Out / Switch Identity Button */}
+          {userRole === 'individual' && onLogOut && (
+            <button
+              type="button"
+              onClick={onLogOut}
+              className="p-2 rounded-full border border-zinc-800 hover:border-zinc-700 bg-zinc-900/80 text-zinc-400 hover:text-[#D4FF00] transition-colors cursor-pointer"
+              title="Switch account / Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

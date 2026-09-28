@@ -1,5 +1,5 @@
 import { mockUsers, mockProjects, mockEvents } from '../data/mockData';
-import type { SearchResults, AIInterpretation } from '../types';
+import type { SearchResults, AIInterpretation, User, CommunityEvent } from '../types';
 
 export function parseQueryIntent(query: string): AIInterpretation {
   const q = query.toLowerCase();
@@ -61,12 +61,18 @@ export function parseQueryIntent(query: string): AIInterpretation {
   };
 }
 
-export function performSemanticSearch(query: string): SearchResults {
+export function performSemanticSearch(
+  query: string, 
+  customUsers?: User[], 
+  customEvents?: CommunityEvent[]
+): SearchResults {
   const q = query.toLowerCase().trim();
   const interpretation = parseQueryIntent(query);
+  const peoplePool = customUsers && customUsers.length > 0 ? customUsers : mockUsers;
+  const eventsPool = customEvents && customEvents.length > 0 ? customEvents : mockEvents;
 
   // Score and filter People
-  const matchedPeople = mockUsers.map(user => {
+  const matchedPeople = peoplePool.map(user => {
     let score = 0;
     const reasons: string[] = [];
 
@@ -122,7 +128,7 @@ export function performSemanticSearch(query: string): SearchResults {
   .slice(0, 3);
 
   // Score and filter Events
-  const matchedEvents = mockEvents.map(evt => {
+  const matchedEvents = eventsPool.map(evt => {
     let score = 0;
     const reasons: string[] = [];
 
