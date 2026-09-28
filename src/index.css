@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    background-color: #09090B;
+    color: #F4F4F5;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+}
+
+/* High-tech Blueprint Grid with Cyber Lighting */
+.bg-grid-pattern {
+  background-color: #09090B;
+  background-image: 
+    /* Ambient neon top-center illumination */
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 255, 0, 0.15) 0%, rgba(9, 9, 11, 0) 70%),
+    /* Secondary bottom ambient glow */
+    radial-gradient(circle at 85% 85%, rgba(212, 255, 0, 0.04) 0%, rgba(9, 9, 11, 0) 50%),
+    /* Major grid lines (every 160px) with subtle lime tint */
+    linear-gradient(to right, rgba(212, 255, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(212, 255, 0, 0.06) 1px, transparent 1px),
+    /* Minor architectural grid lines (every 32px) */
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 160px 160px, 160px 160px, 32px 32px, 32px 32px;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+}
+
+/* Fine Dot Matrix Texture */
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(212, 255, 0, 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Diagonal Striped Tech Texture */
+.bg-tech-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.02) 0,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
+/* Film Grain Texture Overlay */
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* Semi-transparent Tech Card that blends with grid */
+.tech-card {
+  background-color: rgba(20, 20, 23, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom glow and acid lime utilities */
+.lime-glow {
+  box-shadow: 0 0 25px -5px rgba(212, 255, 0, 0.28);
+}
+
+.lime-border-glow:hover {
+  border-color: #D4FF00;
+  box-shadow: 0 0 20px -3px rgba(212, 255, 0, 0.22);
+}
+
+/* Custom scrollbar for modern dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #09090B;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+/* Cute Companion Floating and Waving Animations */
+@keyframes cute-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+}
+
+@keyframes cute-wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes cute-antenna {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 3px #D4FF00);
+  }
+  50% {
+    transform: scale(1.3);
+    filter: drop-shadow(0 0 10px #D4FF00);
+  }
+}
+
+.animate-cute-float {
+  animation: cute-float 4.5s ease-in-out infinite;
+}
+
+.animate-cute-wiggle {
+  animation: cute-wiggle 2s ease-in-out infinite;
+}
+
+.animate-cute-antenna {
+  animation: cute-antenna 1.8s ease-in-out infinite;
+}
